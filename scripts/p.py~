@@ -1,0 +1,11 @@
+from array import *
+from time import *
+
+global word=array(["hola"," mundo"])
+
+while True:
+	#word[0]="hola"
+	#word[1]=" mundo"
+	print word[0]
+	print word[1]
+	#time.sleep(3)

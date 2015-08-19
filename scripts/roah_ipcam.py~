@@ -1,0 +1,56 @@
+NODE_NAME = 'roah_ipcam'
+#import roslib; roslib.load_manifest(NODE_NAME)
+import rospy
+
+from sensor_msgs.msg import *
+
+
+DEFAULT_URL = "http://192.168.0.130/video.mjpg"
+
+
+def main():
+    cimg = CompressedImage()
+    cimg.format = 'jpeg'
+    # ROS initialization
+    rospy.init_node(NODE_NAME, anonymous=True)
+    url = rospy.get_param('~url', DEFAULT_URL)
+    name_topic = rospy.get_param('~stream_topic', '~stream') + "/compressed"
+    # name_topic = "/camera_driver_" + urlparse.urlparse(url).netloc.split(".")[3] + "_" + re.search(r'\d+', urlparse.urlparse(url).path).group() + "/stream/compressed"
+    #if int(re.search(r'\d+', urlparse.urlparse(url).path).group()) == 1:
+    #    url="http://"+urlparse.urlparse(url).netloc+"/video.mjpg"
+    pub = rospy.Publisher(name_topic, CompressedImage)
+    # Connecting to IP camera and start streaming
+    rospy.loginfo("Opening source %s for streaming"%(url))
+    fh  = urllib.urlopen(url)
+    size = None
+    while not rospy.is_shutdown():
+        # Read header
+        while True:
+            line = fh.readline()
+        #    if line=='':
+        #        return
+        #    line = line.strip()
+          #  print "LINE(%s)='%s'"%(len(line), line)
+          #  rospy.sleep(3)
+            if line.startswith("Content-Length"):
+                fs = line.split()
+                try:
+                    size = int(fs[1])
+                    line = fh.readline()
+                    break
+                except StandardError:
+					continue
+            elif line=='' and size is not None:
+				break
+  #      print "HEADER END"
+        # Read image
+        data = fh.read(size)
+        # Publish jpeg image
+        cimg.data = data
+        pub.publish(cimg)
+        rospy.sleep(1.0/30)
+        size = None
+
+
+if __name__=='__main__':
+    main()
